@@ -3,6 +3,7 @@
  * Carnet: 18351
  * Laboratorio 7
  * Catedratico: Pablo Mazariegos
+ * Seccion 20
  */
 
 //Agregamos las librerias necesarias
