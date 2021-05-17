@@ -18,6 +18,17 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/gpio.h"
 #include "driverlib/timer.h"
+#include "driverlib/systick.h"
+#include "driverlib/uart.h"
+
+#define XTAL 16000000
+
+uint32_t ui32Period;//Se incluye la variable para el temporizador
+uint32_t bandera = 0;
+
+void Timer0IntHandler(void);
+void InitUART(void);
+
 
 /**
  * main.c
@@ -27,4 +38,58 @@ int main(void)
     SysCtlClockSet ( SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_16MHZ ) ;//Hacemos la cofig del clck
     SysCtlPeripheralEnable ( SYSCTL_PERIPH_GPIOF ) ;//Activamos el uso de periferios para el puerto F
     GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);//Configuramos los leds rojo, verde y azul como salidas
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);//Se habilita el reloj para el temporizador
+    TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);//Se configura al timer 0 como termporizador periodico
+    ui32Period = (SysCtlClockGet()) / 2;//Se calcula el periodo del temporizador
+    TimerLoadSet(TIMER0_BASE, TIMER_A, ui32Period - 1);//Se establece el periodo del temporizador
+
+    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);//Se habilita el time out
+    IntMasterEnable();//Se habilitan interrupciones globales
+
+
+    InitUART();//Se inicia comunicacion Uart
+
+    IntEnable(INT_TIMER0A);//Se habilita la interrupción en el timer 0
+    IntMasterEnable();//Se habilitan interrupciones globales
+    TimerEnable(TIMER0_BASE, TIMER_A);//Se habilita el timer
+
+    //UARTCharPut(UART0_BASE, 'R');
+    //UARTCharPut(UART0_BASE, 'B');
+    //UARTCharPut(UART0_BASE, 'G');
+
+    while (1)
+    {
+
+    }
+
+
+
 }
+
+
+void Timer0IntHandler(void){
+    TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);//Se limpia la interrupcion del timer
+    if (bandera == 0)
+    {
+        GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x02); //Se enciende el led rojo
+        bandera = 1;
+    }
+    else
+    {
+        GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x00); //Se apagan todas las leds
+        bandera = 0;
+    }
+}
+
+
+void InitUART(void)
+{
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);//Habilitamos el puerto A del GPIO
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);//Se activa el periferio del Uart
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);//Hacemos que los pines de la comunicación Uart se puedean controlar de manera periferica
+    UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,(UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+
+
+}
+
