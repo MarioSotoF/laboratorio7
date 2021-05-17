@@ -24,10 +24,13 @@
 #define XTAL 16000000
 
 uint32_t ui32Period;//Se incluye la variable para el temporizador
-uint32_t bandera = 0;
+uint8_t bandera = 0;
+int32_t color;
 
+//void InitUART(void);
 void Timer0IntHandler(void);
 void InitUART(void);
+
 
 
 /**
@@ -43,22 +46,25 @@ int main(void)
     ui32Period = (SysCtlClockGet()) / 2;//Se calcula el periodo del temporizador
     TimerLoadSet(TIMER0_BASE, TIMER_A, ui32Period - 1);//Se establece el periodo del temporizador
 
+
     TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);//Se habilita el time out
-    IntMasterEnable();//Se habilitan interrupciones globales
+    TimerIntRegister(TIMER0_BASE,TIMER_A,Timer0IntHandler);
 
-
-    InitUART();//Se inicia comunicacion Uart
+    InitUART();
 
     IntEnable(INT_TIMER0A);//Se habilita la interrupción en el timer 0
     IntMasterEnable();//Se habilitan interrupciones globales
     TimerEnable(TIMER0_BASE, TIMER_A);//Se habilita el timer
 
-    //UARTCharPut(UART0_BASE, 'R');
-    //UARTCharPut(UART0_BASE, 'B');
-    //UARTCharPut(UART0_BASE, 'G');
+
+//    UARTCharPut(UART0_BASE, 'R');
+//    UARTCharPut(UART0_BASE, 'B');
+//    UARTCharPut(UART0_BASE, 'G');
 
     while (1)
     {
+        color = UARTCharGet(UART0_BASE);
+
 
     }
 
@@ -69,18 +75,47 @@ int main(void)
 
 void Timer0IntHandler(void){
     TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);//Se limpia la interrupcion del timer
-    if (bandera == 0)
+
+    switch (color)
     {
-        GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x02); //Se enciende el led rojo
-        bandera = 1;
-    }
-    else
-    {
-        GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x00); //Se apagan todas las leds
-        bandera = 0;
+    case 'r':
+        if (bandera == 0)
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x02); //Se enciende el led rojo
+            bandera = 1;
+        }
+        else
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x00); //Se apagan todas las leds
+            bandera = 0;
+        }
+        break;
+    case 'b':
+        if (bandera == 0)
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3,0x04);
+            bandera = 1;
+        }
+        else
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x00); //Se apagan todas las leds
+            bandera = 0;
+        }
+        break;
+    case 'g':
+        if (bandera == 0)
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3,0x08);
+            bandera = 1;
+        }
+        else
+        {
+            GPIOPinWrite(GPIO_PORTF_BASE,GPIO_PIN_3|GPIO_PIN_2|GPIO_PIN_1,0x00); //Se apagan todas las leds
+            bandera = 0;
+        }
+        break;
     }
 }
-
 
 void InitUART(void)
 {
@@ -92,4 +127,7 @@ void InitUART(void)
 
 
 }
+
+
+
 
